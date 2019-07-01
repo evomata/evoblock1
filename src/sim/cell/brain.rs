@@ -9,7 +9,7 @@ type HiddenMatrix = na::MatrixMN<f32, OutLen, OutLen>;
 pub type InputVector = na::MatrixMN<f32, InLen, na::dimension::U1>;
 pub type OutputVector = na::MatrixMN<f32, OutLen, na::dimension::U1>;
 
-pub type OutLen = na::dimension::U16;
+pub type OutLen = na::dimension::U24;
 pub type InLen = na::dimension::U8;
 
 // Number of extra layers

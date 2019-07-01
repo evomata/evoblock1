@@ -3,6 +3,7 @@ mod cell;
 use cell::brain::{Hiddens, InputVector, Network};
 pub use cell::Cell;
 
+use boolinator::Boolinator;
 use gridsim::neumann::*;
 use gridsim::{Neighborhood, Sim};
 use rand::Rng;
@@ -14,10 +15,12 @@ pub enum EvoBlock {}
 
 pub enum Diff {
     Hiddens(Hiddens),
+    Destroy,
     None,
 }
 
 pub enum Move {
+    Brain { network: Network, hiddens: Hiddens },
     Destroy,
     Nothing,
 }
@@ -39,15 +42,33 @@ impl<'a> Sim<'a> for EvoBlock {
                         Cell::None => 0.0,
                     }));
                 let hiddens = network.apply(&input, hiddens.clone());
-                (
-                    Diff::Hiddens(hiddens.clone()),
-                    Neighbors::new(|dir| {
-                        if hiddens.output()[dir_to_index(dir)] > 0.5 {
-                            Move::Destroy
-                        } else {
-                            Move::Nothing
+                let move_index = hiddens
+                    .output()
+                    .iter()
+                    .take(8)
+                    .cloned()
+                    .enumerate()
+                    .max_by_key(|&(_, n)| float_ord::FloatOrd(n))
+                    .and_then(|(ix, value)| (value > 0.5).as_some(ix));
+                let moves = Neighbors::new(|dir| {
+                    if move_index.is_some() && move_index.unwrap() == dir_to_index(dir) {
+                        Move::Brain {
+                            network: network.clone(),
+                            hiddens: hiddens.clone(),
                         }
-                    }),
+                    } else if hiddens.output()[dir_to_index(dir) + 8] > 0.5 {
+                        Move::Destroy
+                    } else {
+                        Move::Nothing
+                    }
+                });
+                (
+                    if move_index.is_some() {
+                        Diff::Destroy
+                    } else {
+                        Diff::Hiddens(hiddens.clone())
+                    },
+                    moves,
                 )
             }
             Cell::None => (Diff::None, Neighbors::new(|_| Move::Nothing)),
@@ -63,6 +84,7 @@ impl<'a> Sim<'a> for EvoBlock {
                 // Update hiddens
                 match diff {
                     Diff::Hiddens(new_hiddens) => *hiddens = new_hiddens,
+                    Diff::Destroy => *cell = Cell::None,
                     Diff::None => {}
                 }
             }
@@ -72,6 +94,7 @@ impl<'a> Sim<'a> for EvoBlock {
         // Handle moves
         for mv in moves.iter() {
             match mv {
+                Move::Brain { network, hiddens } => *cell = Cell::Brain { network, hiddens },
                 Move::Destroy => *cell = Cell::None,
                 Move::Nothing => {}
             }
