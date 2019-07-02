@@ -1,7 +1,7 @@
 mod cell;
 
-use cell::brain::{Hiddens, InputVector, Network};
-pub use cell::Cell;
+pub use cell::{Brain, Cell};
+use cell::{Hiddens, InputVector};
 
 use boolinator::Boolinator;
 use gridsim::neumann::*;
@@ -9,7 +9,8 @@ use gridsim::{Neighborhood, Sim};
 use rand::Rng;
 
 const MUTATE_LAMBDA: f64 = 0.001;
-const SPAWN_CHANCE: f64 = 0.001;
+const CELL_SPAWN_CHANCE: f64 = 0.001;
+const LIFE_SPAWN_CHANCE: f64 = 0.0001;
 
 pub enum EvoBlock {}
 
@@ -20,7 +21,7 @@ pub enum Diff {
 }
 
 pub enum Move {
-    Brain { network: Network, hiddens: Hiddens },
+    Brain(Brain),
     Destroy,
     Nothing,
 }
@@ -35,10 +36,11 @@ impl<'a> Sim<'a> for EvoBlock {
 
     fn step(cell: &Cell, neighbors: Self::Neighbors) -> (Diff, Self::MoveNeighbors) {
         match cell {
-            Cell::Brain { network, hiddens } => {
+            Cell::Brain(Brain { network, hiddens }) => {
                 let input: InputVector =
                     InputVector::from_iterator(neighbors.iter().map(|cell| match cell {
                         Cell::Brain { .. } => 1.0,
+                        Cell::LifeBlock => 0.5,
                         Cell::None => 0.0,
                     }));
                 let hiddens = network.apply(&input, hiddens.clone());
@@ -52,10 +54,10 @@ impl<'a> Sim<'a> for EvoBlock {
                     .and_then(|(ix, value)| (value > 0.5).as_some(ix));
                 let moves = Neighbors::new(|dir| {
                     if move_index.is_some() && move_index.unwrap() == dir_to_index(dir) {
-                        Move::Brain {
+                        Move::Brain(Brain {
                             network: network.clone(),
                             hiddens: hiddens.clone(),
-                        }
+                        })
                     } else if hiddens.output()[dir_to_index(dir) + 8] > 0.5 {
                         Move::Destroy
                     } else {
@@ -71,14 +73,14 @@ impl<'a> Sim<'a> for EvoBlock {
                     moves,
                 )
             }
-            Cell::None => (Diff::None, Neighbors::new(|_| Move::Nothing)),
+            Cell::None | Cell::LifeBlock => (Diff::None, Neighbors::new(|_| Move::Nothing)),
         }
     }
 
     fn update(cell: &mut Cell, diff: Diff, moves: Self::MoveNeighbors) {
         // Handle diffs
         match cell {
-            Cell::Brain { network, hiddens } => {
+            Cell::Brain(Brain { network, hiddens }) => {
                 // Mutate network
                 network.mutate(MUTATE_LAMBDA);
                 // Update hiddens
@@ -88,24 +90,24 @@ impl<'a> Sim<'a> for EvoBlock {
                     Diff::None => {}
                 }
             }
-            Cell::None => {}
+            Cell::None | Cell::LifeBlock => {}
         }
 
         // Handle moves
         for mv in moves.iter() {
             match mv {
-                Move::Brain { network, hiddens } => *cell = Cell::Brain { network, hiddens },
+                Move::Brain(brain) => *cell = Cell::Brain(brain),
                 Move::Destroy => *cell = Cell::None,
                 Move::Nothing => {}
             }
         }
 
         // Handle spawn-in
-        if rand::thread_rng().gen_bool(SPAWN_CHANCE) {
-            *cell = Cell::Brain {
-                network: Network::default(),
-                hiddens: Hiddens::default(),
-            };
+        if rand::thread_rng().gen_bool(CELL_SPAWN_CHANCE) {
+            *cell = Cell::Brain(Brain::default());
+        }
+        if rand::thread_rng().gen_bool(LIFE_SPAWN_CHANCE) {
+            *cell = Cell::LifeBlock;
         }
     }
 }
