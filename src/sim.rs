@@ -22,6 +22,7 @@ pub enum Diff {
 
 pub enum Move {
     Brain(Brain),
+    Incubate(Brain),
     Destroy,
     Nothing,
 }
@@ -47,6 +48,7 @@ impl<'a> Sim<'a> for EvoBlock {
                 let move_index = hiddens
                     .output()
                     .iter()
+                    .skip(8)
                     .take(8)
                     .cloned()
                     .enumerate()
@@ -58,7 +60,12 @@ impl<'a> Sim<'a> for EvoBlock {
                             network: network.clone(),
                             hiddens: hiddens.clone(),
                         })
-                    } else if hiddens.output()[dir_to_index(dir) + 8] > 0.5 {
+                    } else if hiddens.output()[dir_to_index(dir) + 16] > 0.5 {
+                        Move::Incubate(Brain {
+                            network: network.clone(),
+                            hiddens: hiddens.clone(),
+                        })
+                    } else if hiddens.output()[dir_to_index(dir) + 24] > 0.5 {
                         Move::Destroy
                     } else {
                         Move::Nothing
@@ -94,9 +101,17 @@ impl<'a> Sim<'a> for EvoBlock {
         }
 
         // Handle moves
+        let incubate_count = moves.as_ref().iter().filter(|m| if let Move::Incubate(..) = m {true} else {false}).count();
         for mv in moves.iter() {
             match mv {
                 Move::Brain(brain) => *cell = Cell::Brain(brain),
+                Move::Incubate(brain) => {
+                    if let Cell::LifeBlock = *cell {
+                        if incubate_count == 1 {
+                            *cell = Cell::Brain(brain);
+                        }
+                    }
+                },
                 Move::Destroy => *cell = Cell::None,
                 Move::Nothing => {}
             }

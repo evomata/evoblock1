@@ -14,9 +14,9 @@ const DIMS: (usize, usize) = (256, 144);
 fn main() {
     let ui_loop = gridsim_ui::Loop::new(|c| match c {
         Cell::Brain(Brain { hiddens, .. }) => [
-            hiddens.output()[16] * 0.5 + 0.5,
-            hiddens.output()[17] * 0.5 + 0.5,
-            hiddens.output()[18] * 0.5 + 0.5,
+            hiddens.output()[0] * 0.5 + 0.5,
+            hiddens.output()[1] * 0.5 + 0.5,
+            hiddens.output()[2] * 0.5 + 0.5,
             1.0,
         ],
         Cell::LifeBlock => [0.0, 1.0, 0.0, 1.0],
