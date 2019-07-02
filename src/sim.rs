@@ -117,6 +117,7 @@ impl<'a> Sim<'a> for EvoBlock {
             })
             .count();
         let was_death = Cell::DeathBlock == *cell;
+        let was_life = Cell::LifeBlock == *cell;
         for mv in moves.iter() {
             match mv {
                 Move::Brain(brain) => {
@@ -133,7 +134,9 @@ impl<'a> Sim<'a> for EvoBlock {
                         }
                     }
                 }
-                Move::Destroy => *cell = Cell::None,
+                Move::Destroy => if !was_life && !was_death {
+                    *cell = Cell::None;
+                },
                 Move::Nothing => {}
             }
         }
