@@ -13,9 +13,9 @@ pub type OutLen = na::dimension::U32;
 pub type InLen = na::dimension::U8;
 
 // Number of extra layers
-const EXTRA_LAYERS: usize = 1;
+const EXTRA_LAYERS: usize = 2;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Hiddens {
     pub input_hiddens: OutputVector,
     pub internal_hiddens: [OutputVector; EXTRA_LAYERS],
@@ -40,7 +40,7 @@ impl Hiddens {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Network {
     pub input_gru: Arc<MGRUInput>,
     pub internal_grus: [Arc<MGRU>; EXTRA_LAYERS],
@@ -99,7 +99,7 @@ fn mutate_lambda(slice: &mut [f32], lambda: f64) -> bool {
     times != 0
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 struct GRUNet {
     hidden_matrix: HiddenMatrix,
     input_matrix: HiddenMatrix,
@@ -139,7 +139,7 @@ impl GRUNet {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 struct GRUNetInput {
     hidden_matrix: HiddenMatrix,
     input_matrix: InputMatrix,
@@ -180,7 +180,7 @@ impl GRUNetInput {
 }
 
 /// A Minimal Gated Recurrent Unit
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MGRUInput {
     forget_gate: GRUNetInput,
     output_gate: GRUNetInput,
@@ -216,7 +216,7 @@ impl MGRUInput {
 }
 
 /// A Minimal Gated Recurrent Unit
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MGRU {
     forget_gate: GRUNet,
     output_gate: GRUNet,

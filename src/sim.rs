@@ -9,8 +9,9 @@ use gridsim::{Neighborhood, Sim};
 use rand::Rng;
 
 const MUTATE_LAMBDA: f64 = 0.001;
-const CELL_SPAWN_CHANCE: f64 = 0.001;
-const LIFE_SPAWN_CHANCE: f64 = 0.0001;
+const CELL_SPAWN_CHANCE: f64 = 0.0005;
+const LIFE_SPAWN_CHANCE: f64 = 0.005;
+const DEATH_SPAWN_CHANCE: f64 = 0.01;
 
 pub enum EvoBlock {}
 
@@ -40,9 +41,10 @@ impl<'a> Sim<'a> for EvoBlock {
             Cell::Brain(Brain { network, hiddens }) => {
                 let input: InputVector =
                     InputVector::from_iterator(neighbors.iter().map(|cell| match cell {
-                        Cell::Brain { .. } => 1.0,
-                        Cell::LifeBlock => 0.5,
-                        Cell::None => 0.0,
+                        Cell::Brain(Brain { hiddens, .. }) => hiddens.output()[0],
+                        Cell::LifeBlock => -2.0,
+                        Cell::DeathBlock => -3.0,
+                        Cell::None => -1.0,
                     }));
                 let hiddens = network.apply(&input, hiddens.clone());
                 let move_index = hiddens
@@ -80,7 +82,9 @@ impl<'a> Sim<'a> for EvoBlock {
                     moves,
                 )
             }
-            Cell::None | Cell::LifeBlock => (Diff::None, Neighbors::new(|_| Move::Nothing)),
+            Cell::None | Cell::LifeBlock | Cell::DeathBlock => {
+                (Diff::None, Neighbors::new(|_| Move::Nothing))
+            }
         }
     }
 
@@ -97,21 +101,38 @@ impl<'a> Sim<'a> for EvoBlock {
                     Diff::None => {}
                 }
             }
-            Cell::None | Cell::LifeBlock => {}
+            Cell::None | Cell::LifeBlock | Cell::DeathBlock => {}
         }
 
         // Handle moves
-        let incubate_count = moves.as_ref().iter().filter(|m| if let Move::Incubate(..) = m {true} else {false}).count();
+        let incubate_count = moves
+            .as_ref()
+            .iter()
+            .filter(|m| {
+                if let Move::Incubate(..) = m {
+                    true
+                } else {
+                    false
+                }
+            })
+            .count();
+        let was_death = Cell::DeathBlock == *cell;
         for mv in moves.iter() {
             match mv {
-                Move::Brain(brain) => *cell = Cell::Brain(brain),
+                Move::Brain(brain) => {
+                    if was_death {
+                        *cell = Cell::None;
+                    } else {
+                        *cell = Cell::Brain(brain);
+                    }
+                }
                 Move::Incubate(brain) => {
                     if let Cell::LifeBlock = *cell {
                         if incubate_count == 1 {
                             *cell = Cell::Brain(brain);
                         }
                     }
-                },
+                }
                 Move::Destroy => *cell = Cell::None,
                 Move::Nothing => {}
             }
@@ -123,6 +144,9 @@ impl<'a> Sim<'a> for EvoBlock {
         }
         if rand::thread_rng().gen_bool(LIFE_SPAWN_CHANCE) {
             *cell = Cell::LifeBlock;
+        }
+        if rand::thread_rng().gen_bool(DEATH_SPAWN_CHANCE) {
+            *cell = Cell::DeathBlock;
         }
     }
 }

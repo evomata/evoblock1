@@ -20,6 +20,7 @@ fn main() {
             1.0,
         ],
         Cell::LifeBlock => [0.0, 1.0, 0.0, 1.0],
+        Cell::DeathBlock => [1.0, 0.0, 0.0, 1.0],
         Cell::None => [0.0, 0.0, 0.0, 1.0],
     });
     ui_loop.run(gridsim::SquareGrid::<EvoBlock>::new(DIMS.0, DIMS.1));
