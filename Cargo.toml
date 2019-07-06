@@ -13,3 +13,7 @@ array-init = {version = "0.0.4", features = ["nightly"]}
 rand_distr = "0.2.1"
 gridsim-ui = "0.3.1"
 float-ord = "0.2.0"
+
+[profile.release]
+codegen-units = 16
+lto = true
