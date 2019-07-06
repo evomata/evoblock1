@@ -12,7 +12,7 @@ use gridsim::{Neighborhood, Sim};
 use rand::Rng;
 
 const MUTATE_LAMBDA: f64 = 0.001;
-const SPAWN_RATE: f64 = 0.00001;
+const SPAWN_RATE: f64 = 0.000001;
 const CELL_SPAWN: f64 = 1.0 * SPAWN_RATE;
 const BIRTH_SPAWN: f64 = 2.0 * SPAWN_RATE;
 const DEATH_SPAWN: f64 = 3.0 * SPAWN_RATE;
@@ -47,17 +47,7 @@ impl<'a> Sim<'a> for EvoBlock {
                 ..
             }) => {
                 let input: InputVector =
-                    InputVector::from_iterator(neighbors.iter().map(|cell| match cell {
-                        Cell::Life(Life {
-                            brain: Brain { hiddens, .. },
-                            ..
-                        }) => hiddens.output()[0],
-                        Cell::Block(block) => match block {
-                            Birth => -0.1,
-                            Death => -0.2,
-                        },
-                        Cell::None => -1.0,
-                    }));
+                    InputVector::from_iterator(neighbors.iter().map(Cell::signal));
                 let hiddens = network.apply(&input, hiddens.clone());
                 let move_index = hiddens
                     .output()

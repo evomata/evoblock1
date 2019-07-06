@@ -1,6 +1,7 @@
 pub mod brain;
 
 pub use brain::{Hiddens, InputVector, Network};
+use Block::*;
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Brain {
@@ -25,6 +26,22 @@ pub enum Cell {
     Life(Life),
     Block(Block),
     None,
+}
+
+impl Cell {
+    pub fn signal(&self) -> f32 {
+        match self {
+            Cell::Life(Life {
+                brain: Brain { hiddens, .. },
+                ..
+            }) => hiddens.output()[0],
+            Cell::Block(block) => match block {
+                Birth => -0.1,
+                Death => -0.2,
+            },
+            Cell::None => -1.0,
+        }
+    }
 }
 
 impl Default for Cell {
