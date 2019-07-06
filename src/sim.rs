@@ -12,9 +12,10 @@ use gridsim::{Neighborhood, Sim};
 use rand::Rng;
 
 const MUTATE_LAMBDA: f64 = 0.001;
-const CELL_SPAWN_CHANCE: f64 = 0.00005;
-const BIRTH_SPAWN_CHANCE: f64 = 0.001;
-const DEATH_SPAWN_CHANCE: f64 = 0.0015;
+const SPAWN_RATE: f64 = 0.00001;
+const CELL_SPAWN: f64 = 1.0 * SPAWN_RATE;
+const BIRTH_SPAWN: f64 = 2.0 * SPAWN_RATE;
+const DEATH_SPAWN: f64 = 3.0 * SPAWN_RATE;
 
 pub enum EvoBlock {}
 
@@ -162,13 +163,13 @@ impl<'a> Sim<'a> for EvoBlock {
         }
 
         // Handle spawn-in
-        if rand::thread_rng().gen_bool(CELL_SPAWN_CHANCE) {
+        if rand::thread_rng().gen_bool(CELL_SPAWN) {
             *cell = Cell::Life(Life::default());
         }
-        if rand::thread_rng().gen_bool(BIRTH_SPAWN_CHANCE) {
+        if rand::thread_rng().gen_bool(BIRTH_SPAWN) {
             *cell = Cell::Block(Birth);
         }
-        if rand::thread_rng().gen_bool(DEATH_SPAWN_CHANCE) {
+        if rand::thread_rng().gen_bool(DEATH_SPAWN) {
             *cell = Cell::Block(Death);
         }
     }
