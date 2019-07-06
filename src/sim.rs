@@ -1,6 +1,9 @@
 mod cell;
 
-pub use cell::{Brain, Cell};
+pub use cell::{
+    Block::{self, *},
+    Brain, Cell, Life,
+};
 use cell::{Hiddens, InputVector};
 
 use boolinator::Boolinator;
@@ -9,9 +12,9 @@ use gridsim::{Neighborhood, Sim};
 use rand::Rng;
 
 const MUTATE_LAMBDA: f64 = 0.001;
-const CELL_SPAWN_CHANCE: f64 = 0.0005;
-const LIFE_SPAWN_CHANCE: f64 = 0.005;
-const DEATH_SPAWN_CHANCE: f64 = 0.01;
+const CELL_SPAWN_CHANCE: f64 = 0.00005;
+const BIRTH_SPAWN_CHANCE: f64 = 0.001;
+const DEATH_SPAWN_CHANCE: f64 = 0.0015;
 
 pub enum EvoBlock {}
 
@@ -38,12 +41,20 @@ impl<'a> Sim<'a> for EvoBlock {
 
     fn step(cell: &Cell, neighbors: Self::Neighbors) -> (Diff, Self::MoveNeighbors) {
         match cell {
-            Cell::Brain(Brain { network, hiddens }) => {
+            Cell::Life(Life {
+                brain: Brain { network, hiddens },
+                ..
+            }) => {
                 let input: InputVector =
                     InputVector::from_iterator(neighbors.iter().map(|cell| match cell {
-                        Cell::Brain(Brain { hiddens, .. }) => hiddens.output()[0],
-                        Cell::LifeBlock => -2.0,
-                        Cell::DeathBlock => -3.0,
+                        Cell::Life(Life {
+                            brain: Brain { hiddens, .. },
+                            ..
+                        }) => hiddens.output()[0],
+                        Cell::Block(block) => match block {
+                            Birth => -0.1,
+                            Death => -0.2,
+                        },
                         Cell::None => -1.0,
                     }));
                 let hiddens = network.apply(&input, hiddens.clone());
@@ -82,16 +93,17 @@ impl<'a> Sim<'a> for EvoBlock {
                     moves,
                 )
             }
-            Cell::None | Cell::LifeBlock | Cell::DeathBlock => {
-                (Diff::None, Neighbors::new(|_| Move::Nothing))
-            }
+            Cell::None | Cell::Block(..) => (Diff::None, Neighbors::new(|_| Move::Nothing)),
         }
     }
 
     fn update(cell: &mut Cell, diff: Diff, moves: Self::MoveNeighbors) {
         // Handle diffs
         match cell {
-            Cell::Brain(Brain { network, hiddens }) => {
+            Cell::Life(Life {
+                brain: Brain { network, hiddens },
+                ..
+            }) => {
                 // Mutate network
                 network.mutate(MUTATE_LAMBDA);
                 // Update hiddens
@@ -101,7 +113,7 @@ impl<'a> Sim<'a> for EvoBlock {
                     Diff::None => {}
                 }
             }
-            Cell::None | Cell::LifeBlock | Cell::DeathBlock => {}
+            Cell::None | Cell::Block(..) => {}
         }
 
         // Handle moves
@@ -116,40 +128,48 @@ impl<'a> Sim<'a> for EvoBlock {
                 }
             })
             .count();
-        let was_death = Cell::DeathBlock == *cell;
-        let was_life = Cell::LifeBlock == *cell;
+        let was_death = Cell::Block(Death) == *cell;
+        let was_birth = Cell::Block(Birth) == *cell;
         for mv in moves.iter() {
             match mv {
                 Move::Brain(brain) => {
                     if was_death {
                         *cell = Cell::None;
                     } else {
-                        *cell = Cell::Brain(brain);
+                        *cell = Cell::Life(Life {
+                            brain,
+                            holding: None,
+                        });
                     }
                 }
                 Move::Incubate(brain) => {
-                    if let Cell::LifeBlock = *cell {
+                    if was_birth {
                         if incubate_count == 1 {
-                            *cell = Cell::Brain(brain);
+                            *cell = Cell::Life(Life {
+                                brain,
+                                holding: None,
+                            });
                         }
                     }
                 }
-                Move::Destroy => if !was_life && !was_death {
-                    *cell = Cell::None;
-                },
+                Move::Destroy => {
+                    if !was_birth && !was_death {
+                        *cell = Cell::None;
+                    }
+                }
                 Move::Nothing => {}
             }
         }
 
         // Handle spawn-in
         if rand::thread_rng().gen_bool(CELL_SPAWN_CHANCE) {
-            *cell = Cell::Brain(Brain::default());
+            *cell = Cell::Life(Life::default());
         }
-        if rand::thread_rng().gen_bool(LIFE_SPAWN_CHANCE) {
-            *cell = Cell::LifeBlock;
+        if rand::thread_rng().gen_bool(BIRTH_SPAWN_CHANCE) {
+            *cell = Cell::Block(Birth);
         }
         if rand::thread_rng().gen_bool(DEATH_SPAWN_CHANCE) {
-            *cell = Cell::DeathBlock;
+            *cell = Cell::Block(Death);
         }
     }
 }

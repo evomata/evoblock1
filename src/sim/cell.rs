@@ -9,10 +9,21 @@ pub struct Brain {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum Block {
+    Birth,
+    Death,
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Life {
+    pub brain: Brain,
+    pub holding: Option<Block>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Cell {
-    Brain(Brain),
-    LifeBlock,
-    DeathBlock,
+    Life(Life),
+    Block(Block),
     None,
 }
 

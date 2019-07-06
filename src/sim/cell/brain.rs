@@ -13,7 +13,7 @@ pub type OutLen = na::dimension::U32;
 pub type InLen = na::dimension::U8;
 
 // Number of extra layers
-const EXTRA_LAYERS: usize = 2;
+const EXTRA_LAYERS: usize = 3;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hiddens {
