@@ -17,9 +17,9 @@ fn main() {
             brain: Brain { hiddens, .. },
             ..
         }) => [
-            hiddens.output()[0] * 0.95 + 0.05,
-            hiddens.output()[1] * 0.95 + 0.05,
-            hiddens.output()[2] * 0.95 + 0.05,
+            hiddens.output()[0] * 0.5 + 0.05,
+            hiddens.output()[1] * 0.5 + 0.05,
+            hiddens.output()[2] * 0.5 + 0.05,
         ],
         Cell::Block(Birth) => [0.0, 1.0, 0.0],
         Cell::Block(Death) => [1.0, 0.0, 0.0],
