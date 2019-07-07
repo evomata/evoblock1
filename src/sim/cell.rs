@@ -9,7 +9,7 @@ pub struct Brain {
     pub hiddens: Hiddens,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Block {
     Birth,
     Death,
@@ -29,6 +29,7 @@ pub enum Cell {
 }
 
 impl Cell {
+    #[inline]
     pub fn signal(&self) -> f32 {
         match self {
             Cell::Life(Life {
@@ -40,6 +41,14 @@ impl Cell {
                 Death => -0.2,
             },
             Cell::None => -1.0,
+        }
+    }
+
+    #[inline]
+    pub fn give(&mut self, block: Block) {
+        match self {
+            Cell::Life(Life { holding, .. }) => *holding = Some(block),
+            _ => *self = Cell::Block(block),
         }
     }
 }

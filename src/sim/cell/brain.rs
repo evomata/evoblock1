@@ -10,7 +10,7 @@ pub type InputVector = na::MatrixMN<f32, InLen, na::dimension::U1>;
 pub type OutputVector = na::MatrixMN<f32, OutLen, na::dimension::U1>;
 
 pub type OutLen = na::dimension::U32;
-pub type InLen = na::dimension::U8;
+pub type InLen = na::dimension::U9;
 
 // Number of extra layers
 const EXTRA_LAYERS: usize = 3;

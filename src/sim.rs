@@ -11,10 +11,10 @@ use gridsim::{Direction, Neighborhood, Sim};
 use rand::Rng;
 
 const MUTATE_LAMBDA: f64 = 0.001;
-const SPAWN_RATE: f64 = 0.000001;
+const SPAWN_RATE: f64 = 0.00005;
 const CELL_SPAWN: f64 = 1.0 * SPAWN_RATE;
-const BIRTH_SPAWN: f64 = 2.0 * SPAWN_RATE;
-const DEATH_SPAWN: f64 = 3.0 * SPAWN_RATE;
+const BIRTH_SPAWN: f64 = 4.0 * SPAWN_RATE;
+const DEATH_SPAWN: f64 = 1.0 * SPAWN_RATE;
 
 pub enum EvoBlock {}
 
@@ -25,9 +25,9 @@ pub enum Diff {
 }
 
 pub enum Move {
-    Brain(Brain),
+    Life(Life),
     Incubate(Brain),
-    Destroy,
+    Drop(Block),
     Nothing,
 }
 
@@ -43,29 +43,45 @@ impl<'a> Sim<'a> for EvoBlock {
         match cell {
             Cell::Life(Life {
                 brain: Brain { network, hiddens },
-                ..
+                holding,
             }) => {
-                let input: InputVector =
-                    InputVector::from_iterator(neighbors.iter().map(Cell::signal));
+                let input: InputVector = InputVector::from_iterator(
+                    neighbors
+                        .iter()
+                        .map(Cell::signal)
+                        .chain(std::iter::once(holding_signal(holding))),
+                );
                 let hiddens = network.apply(&input, hiddens.clone());
                 let output = hiddens.output().as_slice();
                 let move_choice =
                     NeumannDirection::chooser_slice(&output[8..16]).map(|(dir, _)| dir);
                 let incubate_chooser = NeumannNeighbors::chooser_slice(&output[16..24]);
-                let destroy_chooser = NeumannNeighbors::chooser_slice(&output[24..32]);
+                let drop_choice =
+                    NeumannDirection::chooser_slice(&output[24..32]).map(|(dir, _)| dir);
                 let moves = NeumannNeighbors::new(|dir| {
                     if Some(dir) == move_choice {
-                        Move::Brain(Brain {
-                            network: network.clone(),
-                            hiddens: hiddens.clone(),
+                        Move::Life(Life {
+                            brain: Brain {
+                                network: network.clone(),
+                                hiddens: hiddens.clone(),
+                            },
+                            holding: if drop_choice.is_some() {
+                                None
+                            } else {
+                                *holding
+                            },
                         })
+                    } else if Some(dir) == drop_choice {
+                        if let Some(block) = holding {
+                            Move::Drop(*block)
+                        } else {
+                            Move::Nothing
+                        }
                     } else if incubate_chooser[dir] {
                         Move::Incubate(Brain {
                             network: network.clone(),
                             hiddens: hiddens.clone(),
                         })
-                    } else if destroy_chooser[dir] {
-                        Move::Destroy
                     } else {
                         Move::Nothing
                     }
@@ -102,48 +118,72 @@ impl<'a> Sim<'a> for EvoBlock {
             Cell::None | Cell::Block(..) => {}
         }
 
-        // Handle moves
-        let incubate_count = moves
-            .as_ref()
-            .iter()
-            .filter(|m| {
-                if let Move::Incubate(..) = m {
-                    true
-                } else {
-                    false
-                }
-            })
-            .count();
         let was_death = Cell::Block(Death) == *cell;
         let was_birth = Cell::Block(Birth) == *cell;
-        for mv in moves.iter() {
-            match mv {
-                Move::Brain(brain) => {
-                    if was_death {
-                        *cell = Cell::None;
+
+        // Count number of successful incubate attempts.
+        let incubate_count = if was_birth {
+            moves
+                .as_ref()
+                .iter()
+                .filter(|m| {
+                    if let Move::Incubate(..) = m {
+                        true
                     } else {
-                        *cell = Cell::Life(Life {
-                            brain,
-                            holding: None,
-                        });
+                        false
                     }
-                }
-                Move::Incubate(brain) => {
-                    if was_birth {
-                        if incubate_count == 1 {
+                })
+                .count()
+        } else {
+            0
+        };
+
+        // Count number of block drops.
+        let drop_count = moves
+            .as_ref()
+            .iter()
+            .filter(|m| if let Move::Drop(..) = m { true } else { false })
+            .count();
+        // Count number of life movements.
+        let life_move_count = moves
+            .as_ref()
+            .iter()
+            .filter(|m| if let Move::Life(..) = m { true } else { false })
+            .count();
+
+        // We will obliterate the cell if more than one thing has entered it
+        // or life enters a death cell. This avoids bias towards any particular direction.
+        let obliteration = incubate_count + drop_count + life_move_count > 1
+            || (life_move_count == 1 && was_death);
+
+        if obliteration {
+            *cell = Cell::None;
+        } else {
+            for mv in moves.iter() {
+                match mv {
+                    Move::Life(life) => {
+                        if let Cell::Block(block) = cell {
+                            *cell = Cell::Life(Life {
+                                brain: life.brain,
+                                holding: Some(*block),
+                            });
+                        } else {
+                            *cell = Cell::Life(life);
+                        }
+                    }
+                    Move::Incubate(brain) => {
+                        if was_birth {
                             *cell = Cell::Life(Life {
                                 brain,
                                 holding: None,
                             });
                         }
                     }
-                }
-                Move::Destroy => {
-                    if !was_birth && !was_death {
-                        *cell = Cell::None;
+                    Move::Drop(block) => {
+                        cell.give(block);
                     }
+                    Move::Nothing => {}
                 }
-                Move::Nothing => {}
             }
         }
 
@@ -152,10 +192,22 @@ impl<'a> Sim<'a> for EvoBlock {
             *cell = Cell::Life(Life::default());
         }
         if rand::thread_rng().gen_bool(BIRTH_SPAWN) {
-            *cell = Cell::Block(Birth);
+            cell.give(Birth);
         }
         if rand::thread_rng().gen_bool(DEATH_SPAWN) {
-            *cell = Cell::Block(Death);
+            // This will potentially allow a cell to hold a death block,
+            // which is intended and would allow smart cells to build safe areas.
+            cell.give(Death);
         }
     }
+}
+
+#[inline]
+fn holding_signal(holding: &Option<Block>) -> f32 {
+    holding
+        .map(|block| match block {
+            Birth => 1.0,
+            Death => 0.5,
+        })
+        .unwrap_or(0.0)
 }
