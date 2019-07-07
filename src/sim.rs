@@ -107,7 +107,7 @@ impl<'a> Sim<'a> for EvoBlock {
         // Handle diffs
         match cell {
             Cell::Life(Life {
-                brain: Brain { network, hiddens },
+                brain: Brain { hiddens, .. },
                 holding,
             }) => {
                 // Update hiddens
