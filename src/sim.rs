@@ -11,11 +11,11 @@ use gridsim::neumann::*;
 use gridsim::{Direction, Neighborhood, Sim};
 use rand::Rng;
 
-const MUTATE_LAMBDA: f64 = 0.0001;
-const SPAWN_RATE: f64 = 0.00002;
+const MUTATE_LAMBDA: f64 = 0.1;
+const SPAWN_RATE: f64 = 0.00001;
 const CELL_SPAWN: f64 = 1.0 * SPAWN_RATE;
-const BIRTH_SPAWN: f64 = 1.0 * SPAWN_RATE;
-const DEATH_SPAWN: f64 = 4.0 * SPAWN_RATE;
+const BIRTH_SPAWN: f64 = 1000.0 * SPAWN_RATE;
+const DEATH_SPAWN: f64 = 1.0 * SPAWN_RATE;
 
 pub enum EvoBlock {}
 

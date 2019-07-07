@@ -91,7 +91,7 @@ pub fn sigmoid(n: f32) -> f32 {
 fn mutate_weight(slice: &mut [f32], lambda: f64) -> bool {
     let mut rng = rand::thread_rng();
     let times =
-        rng.sample(Poisson::new(lambda).expect(
+        rng.sample(Poisson::new(lambda * slice.len() as f64).expect(
             "evoblock1::cell::brain::mutate_lambda(): created invalid poisson distribution",
         ));
     for _ in 0..times {
@@ -107,7 +107,7 @@ fn mutate_weight(slice: &mut [f32], lambda: f64) -> bool {
 fn mutate_bias(slice: &mut [f32], lambda: f64) -> bool {
     let mut rng = rand::thread_rng();
     let times =
-        rng.sample(Poisson::new(lambda).expect(
+        rng.sample(Poisson::new(lambda * slice.len() as f64).expect(
             "evoblock1::cell::brain::mutate_lambda(): created invalid poisson distribution",
         ));
     for _ in 0..times {
