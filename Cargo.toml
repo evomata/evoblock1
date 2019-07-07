@@ -5,7 +5,7 @@ authors = ["Geordon Worley <vadixidav@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-gridsim = "0.3.0"
+gridsim = "0.3.2"
 boolinator = "2.4.0"
 nalgebra = "0.18.0"
 rand = "0.7.0"

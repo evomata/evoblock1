@@ -320,7 +320,7 @@ dependencies = [
  "array-init 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "boolinator 2.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "float-ord 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "gridsim 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gridsim 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "gridsim-ui 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -451,7 +451,7 @@ dependencies = [
 
 [[package]]
 name = "gridsim"
-version = "0.3.0"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bincode 1.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -470,7 +470,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cgmath 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "glium 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "gridsim 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gridsim 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rayon 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.94 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1284,7 +1284,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum gleam 0.6.17 (registry+https://github.com/rust-lang/crates.io-index)" = "7f46fd8874e043ffac0d638ed1567a2584f7814f6d72b4db37ab1689004a26c4"
 "checksum glium 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a9d76f3917e51f743c472abde1f8c0bbd289daffa1ada9f62f8deb02eacd558f"
 "checksum glutin 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3069192081fef59b783f0fbf824a9d2320169cb435f31fb2c91df88dc18f11ae"
-"checksum gridsim 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ca7a16dd9241fddced4a93462f22644700601f3bce1788a8fa64e037a7b667f5"
+"checksum gridsim 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "2cdee369b754061a0e1061e2bd1f7850c22d65e1613d4fe1ae7dab87870ae40d"
 "checksum gridsim-ui 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8fe7a001ac0ea01a749655b15515e2648f654e1948cdaa2fde6ada3f5a0c4b10"
 "checksum itertools 0.7.11 (registry+https://github.com/rust-lang/crates.io-index)" = "0d47946d458e94a1b7bcabbf6521ea7c037062c81f534615abcad76e84d4970d"
 "checksum itoa 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "8324a32baf01e2ae060e9de58ed0bc2320c9a2833491ee36cd3b4c414de4db8c"

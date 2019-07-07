@@ -7,8 +7,7 @@ pub use cell::{
 use cell::{Hiddens, InputVector};
 
 use gridsim::neumann::*;
-use NeumannDirection::*;
-use gridsim::{Neighborhood, Direction, Sim};
+use gridsim::{Direction, Neighborhood, Sim};
 use rand::Rng;
 
 const MUTATE_LAMBDA: f64 = 0.001;
@@ -49,30 +48,30 @@ impl<'a> Sim<'a> for EvoBlock {
                 let input: InputVector =
                     InputVector::from_iterator(neighbors.iter().map(Cell::signal));
                 let hiddens = network.apply(&input, hiddens.clone());
-                let move_choice = NeumannDirection::chooser(hiddens
-                    .output()
-                    .iter()
-                    .cloned()
-                    .skip(8).take(8)).map(|(dir, _)| dir);
+                let output = hiddens.output().as_slice();
+                let move_choice =
+                    NeumannDirection::chooser_slice(&output[8..16]).map(|(dir, _)| dir);
+                let incubate_chooser = NeumannNeighbors::chooser_slice(&output[16..24]);
+                let destroy_chooser = NeumannNeighbors::chooser_slice(&output[24..32]);
                 let moves = NeumannNeighbors::new(|dir| {
                     if Some(dir) == move_choice {
                         Move::Brain(Brain {
                             network: network.clone(),
                             hiddens: hiddens.clone(),
                         })
-                    } else if hiddens.output()[dir_to_index(dir) + 16] > 0.5 {
+                    } else if incubate_chooser[dir] {
                         Move::Incubate(Brain {
                             network: network.clone(),
                             hiddens: hiddens.clone(),
                         })
-                    } else if hiddens.output()[dir_to_index(dir) + 24] > 0.5 {
+                    } else if destroy_chooser[dir] {
                         Move::Destroy
                     } else {
                         Move::Nothing
                     }
                 });
                 (
-                    if move_index.is_some() {
+                    if move_choice.is_some() {
                         Diff::Destroy
                     } else {
                         Diff::Hiddens(hiddens.clone())
@@ -158,19 +157,5 @@ impl<'a> Sim<'a> for EvoBlock {
         if rand::thread_rng().gen_bool(DEATH_SPAWN) {
             *cell = Cell::Block(Death);
         }
-    }
-}
-
-#[inline]
-fn dir_to_index(dir: NeumannDirection) -> usize {
-    match dir {
-        Right => 0,
-        UpRight => 1,
-        Up => 2,
-        UpLeft => 3,
-        Left => 4,
-        DownLeft => 5,
-        Down => 6,
-        DownRight => 7,
     }
 }
