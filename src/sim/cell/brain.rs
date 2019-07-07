@@ -14,6 +14,10 @@ pub type InLen = na::dimension::U9;
 
 // Number of extra layers
 const EXTRA_LAYERS: usize = 5;
+// Weight in network maximum
+const MAX_WEIGHT: f32 = 2.0;
+// Bias in network maximum (cant get output len as compile time constant)
+const MAX_BIAS: f32 = MAX_WEIGHT * 32.0;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hiddens {
@@ -94,7 +98,7 @@ fn mutate_weight(slice: &mut [f32], lambda: f64) -> bool {
         *slice
             .choose_mut(&mut rng)
             .expect("evoblock1::cell::brain::mutate_lambda(): mutated empty slice") =
-            rng.gen::<f32>() * 2.0 - 1.0;
+            (rng.gen::<f32>() * 2.0 - 1.0) * MAX_WEIGHT;
     }
     times != 0
 }
@@ -110,7 +114,7 @@ fn mutate_bias(slice: &mut [f32], lambda: f64) -> bool {
         *slice
             .choose_mut(&mut rng)
             .expect("evoblock1::cell::brain::mutate_lambda(): mutated empty slice") =
-            rng.gen::<f32>() - 0.5;
+            (rng.gen::<f32>() * 2.0 - 1.0) * MAX_BIAS;
     }
     times != 0
 }
@@ -125,17 +129,18 @@ struct GRUNet {
 impl GRUNet {
     fn new_forget() -> GRUNet {
         GRUNet {
-            hidden_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
-            input_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
+            hidden_matrix: HiddenMatrix::new_random().map(|n| (n * 2.0 - 1.0) * MAX_WEIGHT),
+            input_matrix: HiddenMatrix::new_random().map(|n| (n * 2.0 - 1.0) * MAX_WEIGHT),
+            // Make the gate initially completely ignore hidden state.
             biases: OutputVector::from_element(-1000.0),
         }
     }
 
     fn new_output() -> GRUNet {
         GRUNet {
-            hidden_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
-            input_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
-            biases: OutputVector::new_random().map(|n| n * 2.0 - 1.0),
+            hidden_matrix: HiddenMatrix::new_random().map(|n| (n * 2.0 - 1.0) * MAX_WEIGHT),
+            input_matrix: HiddenMatrix::new_random().map(|n| (n * 2.0 - 1.0) * MAX_WEIGHT),
+            biases: OutputVector::new_random().map(|n| (n * 2.0 - 1.0) * MAX_BIAS),
         }
     }
 
@@ -168,8 +173,8 @@ struct GRUNetInput {
 impl GRUNetInput {
     fn new_forget() -> GRUNetInput {
         GRUNetInput {
-            hidden_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
-            input_matrix: InputMatrix::new_random().map(|n| n * 2.0 - 1.0),
+            hidden_matrix: HiddenMatrix::new_random().map(|n| (n * 2.0 - 1.0) * MAX_WEIGHT),
+            input_matrix: InputMatrix::new_random().map(|n| (n * 2.0 - 1.0) * MAX_WEIGHT),
             // Make the gate initially completely ignore hidden state.
             biases: OutputVector::from_element(-1000.0),
         }
@@ -177,9 +182,9 @@ impl GRUNetInput {
 
     fn new_output() -> GRUNetInput {
         GRUNetInput {
-            hidden_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
-            input_matrix: InputMatrix::new_random().map(|n| n * 2.0 - 1.0),
-            biases: OutputVector::new_random().map(|n| n * 2.0 - 1.0),
+            hidden_matrix: HiddenMatrix::new_random().map(|n| (n * 2.0 - 1.0) * MAX_WEIGHT),
+            input_matrix: InputMatrix::new_random().map(|n| (n * 2.0 - 1.0) * MAX_WEIGHT),
+            biases: OutputVector::new_random().map(|n| (n * 2.0 - 1.0) * MAX_BIAS),
         }
     }
 
