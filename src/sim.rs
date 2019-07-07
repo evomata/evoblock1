@@ -11,7 +11,7 @@ use gridsim::neumann::*;
 use gridsim::{Direction, Neighborhood, Sim};
 use rand::Rng;
 
-const MUTATE_LAMBDA: f64 = 0.1;
+const MUTATE_LAMBDA: f64 = 0.001;
 const SPAWN_RATE: f64 = 0.00001;
 const CELL_SPAWN: f64 = 1.0 * SPAWN_RATE;
 const BIRTH_SPAWN: f64 = 1000.0 * SPAWN_RATE;
@@ -110,8 +110,6 @@ impl<'a> Sim<'a> for EvoBlock {
                 brain: Brain { network, hiddens },
                 holding,
             }) => {
-                // Mutate network
-                network.mutate(MUTATE_LAMBDA);
                 // Update hiddens
                 match diff {
                     Diff::Update(new_hiddens, new_holding) => {
@@ -122,7 +120,7 @@ impl<'a> Sim<'a> for EvoBlock {
                     Diff::None => {}
                 }
             }
-            Cell::None | Cell::Block(..) => {}
+            _ => {}
         }
 
         let was_death = Cell::Block(Death) == *cell;
@@ -210,6 +208,15 @@ impl<'a> Sim<'a> for EvoBlock {
             // This will potentially allow a cell to hold a death block,
             // which is intended and would allow smart cells to build safe areas.
             cell.give(Death);
+        }
+
+        // Handle mutation
+        match cell {
+            Cell::Life(life) => {
+                // Mutate network
+                life.brain.network.mutate(MUTATE_LAMBDA);
+            }
+            _ => {}
         }
     }
 }
