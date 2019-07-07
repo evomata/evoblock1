@@ -6,16 +6,16 @@ pub use cell::{
 };
 use cell::{Hiddens, InputVector};
 
+use boolinator::Boolinator;
 use gridsim::neumann::*;
 use gridsim::{Direction, Neighborhood, Sim};
 use rand::Rng;
-use boolinator::Boolinator;
 
-const MUTATE_LAMBDA: f64 = 0.001;
-const SPAWN_RATE: f64 = 0.00005;
+const MUTATE_LAMBDA: f64 = 0.0001;
+const SPAWN_RATE: f64 = 0.00002;
 const CELL_SPAWN: f64 = 1.0 * SPAWN_RATE;
-const BIRTH_SPAWN: f64 = 3.0 * SPAWN_RATE;
-const DEATH_SPAWN: f64 = 2.0 * SPAWN_RATE;
+const BIRTH_SPAWN: f64 = 1.0 * SPAWN_RATE;
+const DEATH_SPAWN: f64 = 4.0 * SPAWN_RATE;
 
 pub enum EvoBlock {}
 
@@ -91,7 +91,10 @@ impl<'a> Sim<'a> for EvoBlock {
                     if move_choice.is_some() {
                         Diff::Destroy
                     } else {
-                        Diff::Update(hiddens.clone(), drop_choice.is_none().as_option().and(*holding))
+                        Diff::Update(
+                            hiddens.clone(),
+                            drop_choice.is_none().as_option().and(*holding),
+                        )
                     },
                     moves,
                 )
@@ -114,7 +117,7 @@ impl<'a> Sim<'a> for EvoBlock {
                     Diff::Update(new_hiddens, new_holding) => {
                         *hiddens = new_hiddens;
                         *holding = new_holding;
-                    },
+                    }
                     Diff::Destroy => *cell = Cell::None,
                     Diff::None => {}
                 }

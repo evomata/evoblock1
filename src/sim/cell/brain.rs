@@ -13,7 +13,7 @@ pub type OutLen = na::dimension::U32;
 pub type InLen = na::dimension::U9;
 
 // Number of extra layers
-const EXTRA_LAYERS: usize = 3;
+const EXTRA_LAYERS: usize = 2;
 // Weight in network maximum
 const MAX_WEIGHT: f32 = 2.0;
 // Bias in network maximum (cant get output len as compile time constant)
