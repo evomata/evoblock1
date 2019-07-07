@@ -8,6 +8,7 @@ use cell::{Hiddens, InputVector};
 
 use boolinator::Boolinator;
 use gridsim::neumann::*;
+use NeumannDirection::*;
 use gridsim::{Neighborhood, Sim};
 use rand::Rng;
 
@@ -37,8 +38,8 @@ impl<'a> Sim<'a> for EvoBlock {
     type Diff = Diff;
     type Move = Move;
 
-    type Neighbors = Neighbors<&'a Cell>;
-    type MoveNeighbors = Neighbors<Move>;
+    type Neighbors = NeumannNeighbors<&'a Cell>;
+    type MoveNeighbors = NeumannNeighbors<Move>;
 
     fn step(cell: &Cell, neighbors: Self::Neighbors) -> (Diff, Self::MoveNeighbors) {
         match cell {
@@ -58,7 +59,7 @@ impl<'a> Sim<'a> for EvoBlock {
                     .enumerate()
                     .max_by_key(|&(_, n)| float_ord::FloatOrd(n))
                     .and_then(|(ix, value)| (value > 0.5).as_some(ix));
-                let moves = Neighbors::new(|dir| {
+                let moves = NeumannNeighbors::new(|dir| {
                     if move_index.is_some() && move_index.unwrap() == dir_to_index(dir) {
                         Move::Brain(Brain {
                             network: network.clone(),
@@ -84,7 +85,7 @@ impl<'a> Sim<'a> for EvoBlock {
                     moves,
                 )
             }
-            Cell::None | Cell::Block(..) => (Diff::None, Neighbors::new(|_| Move::Nothing)),
+            Cell::None | Cell::Block(..) => (Diff::None, NeumannNeighbors::new(|_| Move::Nothing)),
         }
     }
 
@@ -166,15 +167,15 @@ impl<'a> Sim<'a> for EvoBlock {
 }
 
 #[inline]
-fn dir_to_index(dir: Direction) -> usize {
+fn dir_to_index(dir: NeumannDirection) -> usize {
     match dir {
-        Direction::Right => 0,
-        Direction::UpRight => 1,
-        Direction::Up => 2,
-        Direction::UpLeft => 3,
-        Direction::Left => 4,
-        Direction::DownLeft => 5,
-        Direction::Down => 6,
-        Direction::DownRight => 7,
+        Right => 0,
+        UpRight => 1,
+        Up => 2,
+        UpLeft => 3,
+        Left => 4,
+        DownLeft => 5,
+        Down => 6,
+        DownRight => 7,
     }
 }

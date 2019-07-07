@@ -20,11 +20,10 @@ fn main() {
             hiddens.output()[0] * 0.5 + 0.5,
             hiddens.output()[1] * 0.5 + 0.5,
             hiddens.output()[2] * 0.5 + 0.5,
-            1.0,
         ],
-        Cell::Block(Birth) => [0.0, 1.0, 0.0, 1.0],
-        Cell::Block(Death) => [1.0, 0.0, 0.0, 1.0],
-        Cell::None => [0.0, 0.0, 0.0, 1.0],
+        Cell::Block(Birth) => [0.0, 1.0, 0.0],
+        Cell::Block(Death) => [1.0, 0.0, 0.0],
+        Cell::None => [0.0, 0.0, 0.0],
     });
     ui_loop.run(gridsim::SquareGrid::<EvoBlock>::new(DIMS.0, DIMS.1));
 }
