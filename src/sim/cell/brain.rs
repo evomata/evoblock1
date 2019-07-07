@@ -13,7 +13,7 @@ pub type OutLen = na::dimension::U32;
 pub type InLen = na::dimension::U9;
 
 // Number of extra layers
-const EXTRA_LAYERS: usize = 3;
+const EXTRA_LAYERS: usize = 5;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hiddens {
@@ -123,22 +123,25 @@ struct GRUNet {
 }
 
 impl GRUNet {
-    fn new() -> GRUNet {
+    fn new_forget() -> GRUNet {
         GRUNet {
             hidden_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
             input_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
-            biases: OutputVector::new_random().map(|n| n - 0.5),
+            biases: OutputVector::from_element(-1000.0),
+        }
+    }
+
+    fn new_output() -> GRUNet {
+        GRUNet {
+            hidden_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
+            input_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
+            biases: OutputVector::new_random().map(|n| n * 2.0 - 1.0),
         }
     }
 
     #[inline]
     fn apply_linear(&self, hiddens: &OutputVector, inputs: &OutputVector) -> OutputVector {
         &self.hidden_matrix * hiddens + &self.input_matrix * inputs + &self.biases
-    }
-
-    #[inline]
-    fn apply_tanh(&self, hiddens: &OutputVector, inputs: &OutputVector) -> OutputVector {
-        self.apply_linear(hiddens, inputs).map(f32::tanh)
     }
 
     #[inline]
@@ -163,22 +166,26 @@ struct GRUNetInput {
 }
 
 impl GRUNetInput {
-    fn new() -> GRUNetInput {
+    fn new_forget() -> GRUNetInput {
         GRUNetInput {
             hidden_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
             input_matrix: InputMatrix::new_random().map(|n| n * 2.0 - 1.0),
-            biases: OutputVector::new_random().map(|n| n - 0.5),
+            // Make the gate initially completely ignore hidden state.
+            biases: OutputVector::from_element(-1000.0),
+        }
+    }
+
+    fn new_output() -> GRUNetInput {
+        GRUNetInput {
+            hidden_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
+            input_matrix: InputMatrix::new_random().map(|n| n * 2.0 - 1.0),
+            biases: OutputVector::new_random().map(|n| n * 2.0 - 1.0),
         }
     }
 
     #[inline]
     fn apply_linear(&self, hiddens: &OutputVector, inputs: &InputVector) -> OutputVector {
         &self.hidden_matrix * hiddens + &self.input_matrix * inputs + &self.biases
-    }
-
-    #[inline]
-    fn apply_tanh(&self, hiddens: &OutputVector, inputs: &InputVector) -> OutputVector {
-        self.apply_linear(hiddens, inputs).map(f32::tanh)
     }
 
     #[inline]
@@ -205,8 +212,8 @@ pub struct MGRUInput {
 impl MGRUInput {
     pub fn new() -> MGRUInput {
         MGRUInput {
-            forget_gate: GRUNetInput::new(),
-            output_gate: GRUNetInput::new(),
+            forget_gate: GRUNetInput::new_forget(),
+            output_gate: GRUNetInput::new_output(),
         }
     }
 
@@ -217,9 +224,10 @@ impl MGRUInput {
         let remebered = f.zip_map(hiddens, |f, h| f * h);
 
         remebered
-            + f.zip_map(&self.output_gate.apply_tanh(&remebered, inputs), |f, o| {
-                (1.0 - f) * o
-            })
+            + f.zip_map(
+                &self.output_gate.apply_sigmoid(&remebered, inputs),
+                |f, o| (1.0 - f) * o,
+            )
     }
 
     pub fn mutated(&self, lambda: f64) -> Option<Self> {
@@ -239,8 +247,8 @@ pub struct MGRU {
 impl MGRU {
     pub fn new() -> MGRU {
         MGRU {
-            forget_gate: GRUNet::new(),
-            output_gate: GRUNet::new(),
+            forget_gate: GRUNet::new_forget(),
+            output_gate: GRUNet::new_output(),
         }
     }
 
@@ -251,9 +259,10 @@ impl MGRU {
         let remebered = f.zip_map(hiddens, |f, h| f * h);
 
         remebered
-            + f.zip_map(&self.output_gate.apply_tanh(&remebered, inputs), |f, o| {
-                (1.0 - f) * o
-            })
+            + f.zip_map(
+                &self.output_gate.apply_sigmoid(&remebered, inputs),
+                |f, o| (1.0 - f) * o,
+            )
     }
 
     pub fn mutated(&self, lambda: f64) -> Option<Self> {
