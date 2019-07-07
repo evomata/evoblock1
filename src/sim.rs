@@ -6,10 +6,9 @@ pub use cell::{
 };
 use cell::{Hiddens, InputVector};
 
-use boolinator::Boolinator;
 use gridsim::neumann::*;
 use NeumannDirection::*;
-use gridsim::{Neighborhood, Sim};
+use gridsim::{Neighborhood, Direction, Sim};
 use rand::Rng;
 
 const MUTATE_LAMBDA: f64 = 0.001;
@@ -50,17 +49,13 @@ impl<'a> Sim<'a> for EvoBlock {
                 let input: InputVector =
                     InputVector::from_iterator(neighbors.iter().map(Cell::signal));
                 let hiddens = network.apply(&input, hiddens.clone());
-                let move_index = hiddens
+                let move_choice = NeumannDirection::chooser(hiddens
                     .output()
                     .iter()
-                    .skip(8)
-                    .take(8)
                     .cloned()
-                    .enumerate()
-                    .max_by_key(|&(_, n)| float_ord::FloatOrd(n))
-                    .and_then(|(ix, value)| (value > 0.5).as_some(ix));
+                    .skip(8).take(8)).map(|(dir, _)| dir);
                 let moves = NeumannNeighbors::new(|dir| {
-                    if move_index.is_some() && move_index.unwrap() == dir_to_index(dir) {
+                    if Some(dir) == move_choice {
                         Move::Brain(Brain {
                             network: network.clone(),
                             hiddens: hiddens.clone(),
