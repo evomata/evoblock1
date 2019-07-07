@@ -24,8 +24,8 @@ pub struct Hiddens {
 impl Default for Hiddens {
     fn default() -> Self {
         Self {
-            input_hiddens: OutputVector::new_random(),
-            internal_hiddens: array_init::array_init(|_| OutputVector::new_random()),
+            input_hiddens: OutputVector::from_element(0.5),
+            internal_hiddens: array_init::array_init(|_| OutputVector::from_element(0.5)),
         }
     }
 }
@@ -49,8 +49,8 @@ pub struct Network {
 impl Default for Network {
     fn default() -> Self {
         Self {
-            input_gru: Arc::new(MGRUInput::new_rand()),
-            internal_grus: array_init::array_init(|_| Arc::new(MGRU::new_rand())),
+            input_gru: Arc::new(MGRUInput::new()),
+            internal_grus: array_init::array_init(|_| Arc::new(MGRU::new())),
         }
     }
 }
@@ -84,7 +84,7 @@ pub fn sigmoid(n: f32) -> f32 {
 }
 
 #[inline]
-fn mutate_lambda(slice: &mut [f32], lambda: f64) -> bool {
+fn mutate_weight(slice: &mut [f32], lambda: f64) -> bool {
     let mut rng = rand::thread_rng();
     let times =
         rng.sample(Poisson::new(lambda).expect(
@@ -99,6 +99,22 @@ fn mutate_lambda(slice: &mut [f32], lambda: f64) -> bool {
     times != 0
 }
 
+#[inline]
+fn mutate_bias(slice: &mut [f32], lambda: f64) -> bool {
+    let mut rng = rand::thread_rng();
+    let times =
+        rng.sample(Poisson::new(lambda).expect(
+            "evoblock1::cell::brain::mutate_lambda(): created invalid poisson distribution",
+        ));
+    for _ in 0..times {
+        *slice
+            .choose_mut(&mut rng)
+            .expect("evoblock1::cell::brain::mutate_lambda(): mutated empty slice") =
+            rng.gen::<f32>() - 0.5;
+    }
+    times != 0
+}
+
 #[derive(Clone, Debug, PartialEq)]
 struct GRUNet {
     hidden_matrix: HiddenMatrix,
@@ -107,11 +123,11 @@ struct GRUNet {
 }
 
 impl GRUNet {
-    fn new_random() -> GRUNet {
+    fn new() -> GRUNet {
         GRUNet {
             hidden_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
             input_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
-            biases: OutputVector::new_random().map(|n| n * 2.0 - 1.0),
+            biases: OutputVector::new_random().map(|n| n - 0.5),
         }
     }
 
@@ -133,9 +149,9 @@ impl GRUNet {
     /// Mutate each matrix element with a probability lambda
     #[inline]
     fn mutate(&mut self, lambda: f64) -> bool {
-        mutate_lambda(self.hidden_matrix.as_mut_slice(), lambda)
-            | mutate_lambda(self.input_matrix.as_mut_slice(), lambda)
-            | mutate_lambda(self.biases.as_mut_slice(), lambda)
+        mutate_weight(self.hidden_matrix.as_mut_slice(), lambda)
+            | mutate_weight(self.input_matrix.as_mut_slice(), lambda)
+            | mutate_bias(self.biases.as_mut_slice(), lambda)
     }
 }
 
@@ -147,11 +163,11 @@ struct GRUNetInput {
 }
 
 impl GRUNetInput {
-    fn new_random() -> GRUNetInput {
+    fn new() -> GRUNetInput {
         GRUNetInput {
             hidden_matrix: HiddenMatrix::new_random().map(|n| n * 2.0 - 1.0),
             input_matrix: InputMatrix::new_random().map(|n| n * 2.0 - 1.0),
-            biases: OutputVector::new_random().map(|n| n * 2.0 - 1.0),
+            biases: OutputVector::new_random().map(|n| n - 0.5),
         }
     }
 
@@ -173,9 +189,9 @@ impl GRUNetInput {
     /// Mutate each matrix element with a probability lambda
     #[inline]
     fn mutate(&mut self, lambda: f64) -> bool {
-        mutate_lambda(self.hidden_matrix.as_mut_slice(), lambda)
-            | mutate_lambda(self.input_matrix.as_mut_slice(), lambda)
-            | mutate_lambda(self.biases.as_mut_slice(), lambda)
+        mutate_weight(self.hidden_matrix.as_mut_slice(), lambda)
+            | mutate_weight(self.input_matrix.as_mut_slice(), lambda)
+            | mutate_bias(self.biases.as_mut_slice(), lambda)
     }
 }
 
@@ -184,15 +200,13 @@ impl GRUNetInput {
 pub struct MGRUInput {
     forget_gate: GRUNetInput,
     output_gate: GRUNetInput,
-    hiddens: OutputVector,
 }
 
 impl MGRUInput {
-    pub fn new_rand() -> MGRUInput {
+    pub fn new() -> MGRUInput {
         MGRUInput {
-            forget_gate: GRUNetInput::new_random(),
-            output_gate: GRUNetInput::new_random(),
-            hiddens: OutputVector::new_random(),
+            forget_gate: GRUNetInput::new(),
+            output_gate: GRUNetInput::new(),
         }
     }
 
@@ -220,15 +234,13 @@ impl MGRUInput {
 pub struct MGRU {
     forget_gate: GRUNet,
     output_gate: GRUNet,
-    hiddens: OutputVector,
 }
 
 impl MGRU {
-    pub fn new_rand() -> MGRU {
+    pub fn new() -> MGRU {
         MGRU {
-            forget_gate: GRUNet::new_random(),
-            output_gate: GRUNet::new_random(),
-            hiddens: OutputVector::new_random(),
+            forget_gate: GRUNet::new(),
+            output_gate: GRUNet::new(),
         }
     }
 
