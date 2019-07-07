@@ -9,6 +9,7 @@ use cell::{Hiddens, InputVector};
 use gridsim::neumann::*;
 use gridsim::{Direction, Neighborhood, Sim};
 use rand::Rng;
+use boolinator::Boolinator;
 
 const MUTATE_LAMBDA: f64 = 0.001;
 const SPAWN_RATE: f64 = 0.00005;
@@ -19,7 +20,7 @@ const DEATH_SPAWN: f64 = 2.0 * SPAWN_RATE;
 pub enum EvoBlock {}
 
 pub enum Diff {
-    Hiddens(Hiddens),
+    Update(Hiddens, Option<Block>),
     Destroy,
     None,
 }
@@ -90,7 +91,7 @@ impl<'a> Sim<'a> for EvoBlock {
                     if move_choice.is_some() {
                         Diff::Destroy
                     } else {
-                        Diff::Hiddens(hiddens.clone())
+                        Diff::Update(hiddens.clone(), drop_choice.is_none().as_option().and(*holding))
                     },
                     moves,
                 )
@@ -104,13 +105,16 @@ impl<'a> Sim<'a> for EvoBlock {
         match cell {
             Cell::Life(Life {
                 brain: Brain { network, hiddens },
-                ..
+                holding,
             }) => {
                 // Mutate network
                 network.mutate(MUTATE_LAMBDA);
                 // Update hiddens
                 match diff {
-                    Diff::Hiddens(new_hiddens) => *hiddens = new_hiddens,
+                    Diff::Update(new_hiddens, new_holding) => {
+                        *hiddens = new_hiddens;
+                        *holding = new_holding;
+                    },
                     Diff::Destroy => *cell = Cell::None,
                     Diff::None => {}
                 }
