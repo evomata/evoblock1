@@ -120,6 +120,11 @@ impl<'a> Sim<'a> for EvoBlock {
 
         let was_death = Cell::Block(Death) == *cell;
         let was_birth = Cell::Block(Birth) == *cell;
+        let was_occupied = if let Cell::Life(..) = cell {
+            true
+        } else {
+            false
+        };
 
         // Count number of successful incubate attempts.
         let incubate_count = if was_birth {
@@ -167,7 +172,7 @@ impl<'a> Sim<'a> for EvoBlock {
                                 brain: life.brain,
                                 holding: Some(*block),
                             });
-                        } else {
+                        } else if !was_occupied {
                             *cell = Cell::Life(life);
                         }
                     }
